@@ -1,10 +1,11 @@
-## Interface: 30100
+## Interface: 30200
 ## Title: cargBags_|cfe87b23fGnomed|r
 ## Author: Soeters
-## Version: 1.6
+## Version: r16
 ## X-eMail:soeters@free.fr
 ## Notes: Layout for cargBags
 ## RequiredDeps: cargBags
 ## OptionalDeps: cargBags_Anywhere
 
+Config.lua
 layout.lua
