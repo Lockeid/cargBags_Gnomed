@@ -7,59 +7,12 @@ TODO
 -- Install the config
 local db = cargBags_Gnomed.Config
 
-
+-- Localization
+-- Esaier than requesting every localization
 local L = {}
-local gl = GetLocale()
-if gl == "enGB" or gl == "enUS" then
-	L.Armor = "Armor"
-	L.Weapon = "Weapon"
-	L.Gem = "Gem"
-	L.Trades = "Trade Goods"
-	L.Consumables = "Consumable"
-	L.Quest = "Quest"
-elseif gl == "frFR" then
-	L.Armor = "Armure"
-	L.Weapon = "Arme"
-	L.Gem = "Gemme"
-	L.Trades = "Artisanat"
-	L.Consumables = "Consommable"
-	L.Quest = "Quête"
-elseif gl == "ruRU" then
-	L.Armor = "Доспехи"
-	L.Weapon = "Оружие"
-	L.Gem = "Самоцветы"
-	L.Trades = "Хозяйственные товары"
-	L.Consumables = "Расходуемые"
-	L.Quest = "Задания"
-elseif gl == "zhTW" then
-	L.Armor = "護甲"
-	L.Weapon = "武器"
-	L.Gem = "珠寶"
-	L.Trades = "商品"
-	L.Consumables = "消耗品"
-	L.Quest = "任務"
-elseif gl == "zhCN" then
-	L.Armor = "护甲"
-	L.Weapon = "武器"
-	L.Gem = "珠宝"
-	L.Trades = "商品"
-	L.Consumables = "消耗品"
-	L.Quest = "任务"
-elseif gl == "deDE" then
-	L.Armor = "Rüstung"
-	L.Weapon = "Waffe"
-	L.Gem = "Juwelen"
-	L.Trades = "Handwerkswaren"
-	L.Consumables = "Verbrauchbar"
-	L.Quest = "Quest"
-elseif gl == "koKR" then
-	L.Armor = "방어구"
-	L.Weapon = "무기"
-	L.Gem = "보석"
-	L.Trades = "직업용품"
-	L.Consumables = "소비용품"
-	L.Quest = "퀘스트"
-end
+L.Weapon, L.Armor, L.Container, L.Consumables, L.Glyph, L.Trades,
+L.Projectile, L.Quiver, L.Recipe, L.Gem, L.Misc, L.Quest = GetAuctionItemClasses()
+
 	
 
 -- This function is only used inside the layout, so the cargBags-core doesn't care about it
@@ -221,29 +174,6 @@ local function createSmallButton(name, parent, ...)
 	return button
 end
 
--- Animation : Alpha
-local f = CreateFrame"Frame"
-local function OnShow(self)
-	self:SetAlpha(0)
-	self.Fade.min = 0
-	self.Fade.max = 1
-	self.Fade:Play()
-	f.Show(self)
-end
-local function OnHide(self)
-	self:SetAlpha(1)
-	self.Fade.min = 1
-	self.Fade.max = 0
-	self.Fade:Play()
-end
-
-local function OnUpdate(self)
-	self.Parent:SetAlpha(self.min + (self.max - self.min) * self:GetProgress())
-end
-local function OnFinished(self)
-	if(self.max == 0) then f.Hide(self.Parent) end
-end
-
 
 -- Blizzard Equipement manager part
 -- This table will hold information about all items which are part of a set:
@@ -357,22 +287,6 @@ local func = function(settings, self, name)
 	self:SetFrameStrata("HIGH")
 	tinsert(UISpecialFrames, self:GetName()) -- Close on "Esc"
 	
-	-- Animation part II
-	-- Temporaly disabled
-	--[[
-	local anim = self:CreateAnimationGroup()
-	local fade = anim:CreateAnimation("Animation")
-	fade:SetDuration(.25)
-	fade:SetSmoothing("IN_OUT")
-	fade.Parent = self
-	fade:SetScript("OnUpdate", OnUpdate)
-	fade:SetScript("OnFinished", OnFinished)
-	self.Show = OnShow
-	self.Hide = OnHide
-	self.Fade = fade ]]
-	
-
-
 	-- Make main frames movable
 	 if(self.Name == "cB_Gnomed_Bag" or self.Name == "cB_Gnomed_Bank") then
 		self:SetMovable(true)
@@ -402,22 +316,23 @@ local func = function(settings, self, name)
 	self.ContainerHeight = 0
 	self:UpdateDimensions()
 	self:SetWidth(38*self.Columns)	-- Set the frame's width based on the columns
-
-		-- Caption and close button
-		local caption = self:CreateFontString(nil, "OVERLAY", "GameFontNormalLeft")
-		caption:SetTextColor(0,201/255,180/255)
-		if(caption) then
-			for captionText in string.gmatch(self.Name,"cB_Gnomed_(%w+)") do 
-				caption:SetText(captionText)
-			end
-			caption:SetPoint("TOPLEFT", 0, 0)
-			self.Caption = caption
-			
-			local close = CreateFrame("Button", nil, self, "UIPanelCloseButton")
-			close:SetPoint("TOPRIGHT", 5, 8)
-			close:SetScript("OnClick", function(self) self:GetParent():Hide() end)
-			
+
+
+	-- Caption and close button
+	local caption = self:CreateFontString(nil, "OVERLAY", "GameFontNormalLeft")
+	caption:SetTextColor(0,201/255,180/255)
+	if(caption) then
+	for captionText in string.gmatch(self.Name,"cB_Gnomed_(%w+)") do 
+			caption:SetText(captionText)
 		end
+		caption:SetPoint("TOPLEFT", 0, 0)
+		self.Caption = caption
+		
+		local close = CreateFrame("Button", nil, self, "UIPanelCloseButton")
+		close:SetPoint("TOPRIGHT", 5, 8)
+		close:SetScript("OnClick", function(self) self:GetParent():Hide() end)
+		
+	end
 
 		-- New feature: right click dropdown for filters
 	local menu = {}
@@ -463,13 +378,19 @@ local func = function(settings, self, name)
 		filters:SetPoint("LEFT",filters.text,"RIGHT",3,0)
 	end
 
+	local bagType
+	if(self.Name == "cB_Gnomed_Bag") then
+		bagType = "backpack+bags" -- We want to add all bags and the backpack to our space display
+	else
+		bagType = "bankframe+bank" -- the bank gets bank bags, of course
+	end
 
 	  if(self.Name == "cB_Gnomed_Bag" or self.Name == "cB_Gnomed_Bank") then
 		-- The font string for bag space display
 		-- You can see, it works with tags, - [free], [max], [used] are currently supported
-		local space = self:SpawnPlugin("Space", "[free] / [max] free")
+		local space = self:SpawnPlugin("Space", "[free] / [max] free", bagType)
 		if(space) then
-			space:SetPoint("BOTTOMLEFT", self, 70, 0)
+			space:SetPoint("BOTTOMLEFT", self, self.Name == "cB_Gnomed_Bag" and 70 or 0, 0)
 			space:SetJustifyH"LEFT"
 		end
 
@@ -485,15 +406,17 @@ local func = function(settings, self, name)
 				anywhere:SetPoint("LEFT",self.Caption,"RIGHT",2,-2)
 			end
 		end
+		
+		-- kRestack
+	
 
+		if(self.Name == "cB_Gnomed_Bag") then
+			bagType = "bags" -- We want to add all bags to our bag button bar
+		else
+			bagType = "bank" -- the bank gets bank bags, of course
+		end
 
 		 -- A nice bag bar for changing/toggling bags
-		local bagType
-		if(self.Name == "cB_Gnomed_Bag") then
-			bagType = "bags"	-- We want to add all bags to our bag button bar
-		else
-			bagType = "bank"	-- the bank gets bank bags, of course
-		end
 		local bagButtons = self:SpawnPlugin("BagBar", bagType)
 		if(bagButtons) then
 			bagButtons:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, -15)
@@ -550,6 +473,11 @@ local func = function(settings, self, name)
 		bagToggleText:SetPoint("CENTER", bagToggle)
 		bagToggleText:SetFontObject(GameFontNormalSmall)
 		bagToggleText:SetText("Bags")
+		
+		if select(4,GetAddOnInfo("kRestack"))then
+			local restack = createSmallButton("R", self,"BOTTOMRIGHT",self,"BOTTOMRIGHT",-35,-2)
+			restack:SetScript("OnClick", function() kRestack(bagType) end)
+		end
 
 	  end	
 
@@ -558,12 +486,12 @@ local func = function(settings, self, name)
 		local purchase = self:SpawnPlugin("Purchase")
 		if(purchase) then
 			purchase:SetText(BANKSLOTPURCHASE)
-			purchase:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", 0, 20)
+			purchase:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -60, 0)
 			if(self.BagBar) then purchase:SetParent(self.BagBar) end
 
 			purchase.Cost = self:SpawnPlugin("Money", "static")
 			purchase.Cost:SetParent(purchase)
-			purchase.Cost:SetPoint("BOTTOMRIGHT", purchase, "TOPRIGHT", 0, 2)
+			purchase.Cost:SetPoint("RIGHT", purchase, "LEFT", -2, 0)
 		end
 	end	
 
@@ -593,8 +521,6 @@ end
 
 -- Register the style with cargBags
 cargBags:RegisterStyle("Gnomed", setmetatable({}, {__call = func}))
-
-
 
 
 local INVERTED = -1 -- with inverted filters (using -1), everything goes into this bag when the filter returns false
@@ -649,13 +575,12 @@ end
 
 -----------------
 -- Bank filters
------------------local onlyBankArmor = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Armor end
+-----------------
+local onlyBankArmor = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Armor end
 local onlyBankWeapons = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Weapon end
 local onlyBankConsumables = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Consumables end
 
 -- Frames Spawns
-
-
 
 --local bankArmor = cargBags:Spawn("cB_Gnomed_Bank-Armor",bank)
 --bankArmor:SetFilter(onlyBankArmor, true)
