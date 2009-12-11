@@ -388,7 +388,7 @@ local func = function(settings, self, name)
 	  if(self.Name == "cB_Gnomed_Bag" or self.Name == "cB_Gnomed_Bank") then
 		-- The font string for bag space display
 		-- You can see, it works with tags, - [free], [max], [used] are currently supported
-		local space = self:SpawnPlugin("Space", "[free] / [max] free", bagType)
+		local space = self:SpawnPlugin("Space", "[free] / [max] free", self.Name == "cB_Gnomed_Bag" and "bags" or "bank")
 		if(space) then
 			space:SetPoint("BOTTOMLEFT", self, self.Name == "cB_Gnomed_Bag" and 70 or 0, 0)
 			space:SetJustifyH"LEFT"
