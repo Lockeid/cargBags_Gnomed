@@ -1,7 +1,6 @@
 --[[
 TODO
-	-- Bank filtering
-	-- Collapsing if the bag is hidden]]--
+	-- One empty icon]]--
 
 -- Install the config
 local db = cargBags_Gnomed.Config

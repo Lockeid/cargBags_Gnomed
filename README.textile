@@ -31,7 +31,7 @@ h2. To do
 
 Only one icon for empty buttons
 
-h2.Thanks
+h2. Thanks
 
 * Cargor for this wonderful addon
 * Luzzifus for all his help (for equipments and frame placement)
