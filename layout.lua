@@ -1,19 +1,17 @@
 --[[
 TODO
 	-- Bank filtering
-	-- Collapsing if the bag is hidden
-]]--
+	-- Collapsing if the bag is hidden]]--
 
 -- Install the config
 local db = cargBags_Gnomed.Config
+cargBags_Gnomed.Frames = {}
 
 -- Localization
 -- Esaier than requesting every localization
 local L = {}
-L.Weapon, L.Armor, L.Container, L.Consumables, L.Glyph, L.Trades,
-L.Projectile, L.Quiver, L.Recipe, L.Gem, L.Misc, L.Quest = GetAuctionItemClasses()
+L.Weapon, L.Armor, L.Container, L.Consumables, L.Glyph, L.Trades, L.Projectile, L.Quiver, L.Recipe, L.Gem, L.Misc, L.Quest = GetAuctionItemClasses()
 
-	
 
 -- This function is only used inside the layout, so the cargBags-core doesn't care about it
 -- It creates the border for glowing process in UpdateButton()
@@ -26,6 +24,13 @@ local createGlow = function(button)
 	glow:SetHeight(70)
 	glow:SetPoint("CENTER", button)
 	button.Glow = glow
+end
+
+-- Hide empty bags
+local function CollapseEmpty(frame) 
+	if(frame.ContainerHeight == 0) then
+		frame:Hide()
+	end
 end
 
 -- The main function for updating an item button,
@@ -86,11 +91,9 @@ end
 local UpdateButtonPositions = function(self)
 	local button
 	local col, row = 0, 0
-	local empty = true
+	local empty = false
 	for i, button in self:IterateButtons() do
 		button:ClearAllPoints()
-		--local link = GetContainerItemLink(button.bagID, button.slotID)
-		--if(link) then empty = false end
 
 		local xPos = col * 38
 		local yPos = -1 * row * 38
@@ -104,18 +107,24 @@ local UpdateButtonPositions = function(self)
 			col = col + 1	 
 		end
 	end
-	
 	-- Hide if empty
 	--if(empty) then self:Hide() else self:Show() end
 
 	-- This variable stores the size of the item button container
-	if self.Name == "cB_Gnomed_Filters" then
-		--self:SetHeight(40)
-		self.ContainerHeight = 40
-	else
-		self.ContainerHeight = (row + (col>0 and 1 or 0)) * 38
+	
+	self.ContainerHeight = (row + (col>0 and 1 or 0)) * 38
+	
+	-- checks if our bag is empty. If yes then hide it
+	if(self.ContainerHeight == 0) then empty = true end 
+	
+	if(empty) then 
+		self:Hide() 
+	else 
+		if(self.Name ~= "cB_Gnomed_Bag" and self.Name ~= "cB_Gnomed_Bank") then
+			self:Show()
+		end
 	end
-
+	
 	if(self.UpdateDimensions) then self:UpdateDimensions() end -- Update the bag's height
 end
 
@@ -147,7 +156,6 @@ local UpdateDimensions = function(self)
 		height = height + 20
 	end
 	self:SetHeight(self.ContainerHeight + height)
-
 end
 
 
@@ -290,7 +298,6 @@ local func = function(settings, self, name)
 	-- Make main frames movable
 	 if(self.Name == "cB_Gnomed_Bag" or self.Name == "cB_Gnomed_Bank") then
 		self:SetMovable(true)
-		--self:SetUserPlaced(false)
 	
 		self:RegisterForClicks("LeftButton", "RightButton");
 	    self:SetScript("OnMouseDown", function() 
@@ -303,7 +310,7 @@ local func = function(settings, self, name)
 	if(self.Name =="cB_Gnomed_Keyring") then
 		self:SetScale(db.KeyringScale)	-- Make key ring a bit smaller
 		self.Columns = db.KeyringColumns
-	elseif(self.Name == "cB_Gnomed_Bank") then
+	elseif(strfind(self.Name, "Bank")) then
 		self.Columns = db.BankColumns
 	else 
 		self.Columns = db.DefaultColumns
@@ -319,15 +326,15 @@ local func = function(settings, self, name)
 
 
 	-- Caption and close button
-	local caption = self:CreateFontString(nil, "OVERLAY", "GameFontNormalLeft")
-	caption:SetTextColor(0,201/255,180/255)
+	local caption = self:CreateFontString(nil, "OVERLAY")
+	caption:SetFont(db.Font, db.FSize, db.FOutline)
 	if(caption) then
-	for captionText in string.gmatch(self.Name,"cB_Gnomed_(%w+)") do 
-			caption:SetText(captionText)
+		for captionText in string.gmatch(self.Name,"cB_Gnomed_([%w ]+)") do 
+				caption:SetText(captionText)
 		end
 		caption:SetPoint("TOPLEFT", 0, 0)
 		self.Caption = caption
-		
+			
 		local close = CreateFrame("Button", nil, self, "UIPanelCloseButton")
 		close:SetPoint("TOPRIGHT", 5, 8)
 		close:SetScript("OnClick", function(self) self:GetParent():Hide() end)
@@ -335,26 +342,25 @@ local func = function(settings, self, name)
 	end
 
 		-- New feature: right click dropdown for filters
+	--
 	local menu = {}
 	local tinsert = tinsert
 	local dd = CreateFrame('Frame', 'cargBags_GnomedMenu', UIParent, 'UIDropDownMenuTemplate')
 	
 	local function dropdown()
 		menu = wipe(menu)
+		
 		local title = {text = 'cargBags Filters\n ', isTitle = true}
 		tinsert(menu, title)
-		local bank = {text = 'Bank', func = function() ToggleFrame(cB_Gnomed_Bank) end}
-		tinsert(menu,bank)
-		local equip = {text = 'Equipment', func = function() ToggleFrame(cB_Gnomed_Equipment) end}
-		tinsert(menu,equip)
-		local stuff = {text = 'Stuff', func = function() ToggleFrame(cB_Gnomed_Stuff) end}
-		tinsert(menu,stuff)
-		local quest = {text = 'Quest', func = function() ToggleFrame(cB_Gnomed_Quest) end}
-		tinsert(menu,quest)
-		local conso = {text = 'Consumables',func = function() ToggleFrame(cB_Gnomed_Consumables) end}
-		tinsert(menu,conso)
-		local td = {text = 'Trade Goods',func = function() ToggleFrame(cB_Gnomed_TradeGoods) end}
-		tinsert(menu,td)
+		for _, f in pairs(cargBags_Gnomed.Frames) do
+			local t = {}
+			str = f:GetName()
+			name = strmatch(str, "cB_Gnomed_([%w ]+)")
+			if (not strfind(name,"Bank")) then
+				local t = {text = name, func = function() ToggleFrame(f) end}
+				tinsert(menu, t)
+			end			
+		end
 	end
 	
 	local function showDropdown(self)
@@ -362,36 +368,38 @@ local func = function(settings, self, name)
 		local x = self:GetRight() >= GetScreenWidth()/2 and "LEFT" or "RIGHT"
 		dropdown()
 		EasyMenu(menu,dd,self,0,0)
-	end
+	end--
 	if(self.Name == "cB_Gnomed_Bag") then
 		local filters = CreateFrame("Button", nil, self)
 		filters:SetWidth(24)
 		filters:SetHeight(24)
-		filters:SetNormalTexture([[Interface\ChatFrame\UI-ChatIcon-ScrollDown-Up]])
-		filters:SetPushedTexture([[Interface\ChatFrame\UI-ChatIcon-ScrollDown-Down]])
-		filters:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]])
+		filters:SetNormalTexture('Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up')
+		filters:SetPushedTexture('Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down')
+		filters:SetHighlightTexture('Interface\\Buttons\\UI-Common-MouseHilight')
 		filters:SetScript("OnClick", showDropdown)
 		
 		filters.text = filters:CreateFontString(nil,"OVERLAY","GameFontNormal")
 		filters.text:SetPoint("BOTTOMLEFT",self,"BOTTOMLEFT",0,0)
 		filters.text:SetText("Filters")
+		filters.text:SetFont(db.Font, db.FSize, db.FOutline)
 		filters:SetPoint("LEFT",filters.text,"RIGHT",3,0)
-	end
+	end--
 
 	local bagType
 	if(self.Name == "cB_Gnomed_Bag") then
-		bagType = "backpack+bags" -- We want to add all bags and the backpack to our space display
+		bagType = "bags" -- We want to add all bags to our bag button bar
 	else
-		bagType = "bankframe+bank" -- the bank gets bank bags, of course
+		bagType = "bank" -- the bank gets bank bags, of course
 	end
 
 	  if(self.Name == "cB_Gnomed_Bag" or self.Name == "cB_Gnomed_Bank") then
 		-- The font string for bag space display
 		-- You can see, it works with tags, - [free], [max], [used] are currently supported
-		local space = self:SpawnPlugin("Space", "[free] / [max] free", self.Name == "cB_Gnomed_Bag" and "bags" or "bank")
+		local space = self:SpawnPlugin("Space", "[free] / [max] free", bagType)
 		if(space) then
 			space:SetPoint("BOTTOMLEFT", self, self.Name == "cB_Gnomed_Bag" and 70 or 0, 0)
 			space:SetJustifyH"LEFT"
+			space:SetFont(db.Font, db.FSize, db.FOutline)
 		end
 
 
@@ -407,15 +415,6 @@ local func = function(settings, self, name)
 			end
 		end
 		
-		-- kRestack
-	
-
-		if(self.Name == "cB_Gnomed_Bag") then
-			bagType = "bags" -- We want to add all bags to our bag button bar
-		else
-			bagType = "bank" -- the bank gets bank bags, of course
-		end
-
 		 -- A nice bag bar for changing/toggling bags
 		local bagButtons = self:SpawnPlugin("BagBar", bagType)
 		if(bagButtons) then
@@ -471,9 +470,9 @@ local func = function(settings, self, name)
 		end)
 		local bagToggleText = bagToggle:CreateFontString(nil, "OVERLAY")
 		bagToggleText:SetPoint("CENTER", bagToggle)
-		bagToggleText:SetFontObject(GameFontNormalSmall)
+		bagToggleText:SetFont(db.Font, db.FSize, db.FOutline)
 		bagToggleText:SetText("Bags")
-		
+		-- kRestack
 		if select(4,GetAddOnInfo("kRestack"))then
 			local restack = createSmallButton("R", self,"BOTTOMRIGHT",self,"BOTTOMRIGHT",-35,-2)
 			restack:SetScript("OnClick", function() kRestack(bagType) end)
@@ -505,7 +504,7 @@ local func = function(settings, self, name)
 	edgeSize =16, 
 	insets = { left = 4,right = 4,top = 4,bottom = 4} 
 	}
-	if self.Name ~= "cB_Gnomed_Bank" then
+	if strfind(self.Name, "Bank") then
 		backdrop:SetBackdropColor(0,0,0)
 	else
 		backdrop:SetBackdropColor(0,180/255,1)
@@ -515,6 +514,7 @@ local func = function(settings, self, name)
 	backdrop:SetFrameLevel(4)
 	backdrop:SetPoint("TOPLEFT",-6,6)
 	backdrop:SetPoint("BOTTOMRIGHT",6,-6)
+	
 
 	return self
 end
@@ -545,7 +545,6 @@ local onlyArmor = function(item) return item.type and item.type == L.Armor end -
 local onlyWeapon = function(item) return item.type and item.type == L.Weapon end
 local onlyStuff = function(item) return item.type and (item.type == L.Armor or item.type == L.Weapon) end
 
---local hideJunk = function(item) return not item.rarity or item.rarity > 0 end -- for nothing :)
 -- Hide unused slots
 local hideEmpty = function(item) return item.texture ~= nil end -- for keyring, stuff, quest, consumable
 -- Quest items filter
@@ -556,6 +555,12 @@ local onlyConsumables = function(item) return item.type and item.type == L.Consu
 local onlyTradeGoods = function(item) return item.type and item.type == L.Trades end
 -- Gem filter
 local onlyGems = function(item) return item.type and item.type == L.Gem end
+-- Glyphs
+local onlyGlyphs = function(item) return item.type and item.type == L.Glyph end
+-- Projectiles
+local onlyPJ = function(item) return item.type and item.type == L.Projectile end
+-- Custom
+--~ local onlyCustom = function (item) end
 -- Filters filters :)
 local nothing = function(item) return end
 
@@ -576,16 +581,42 @@ end
 -----------------
 -- Bank filters
 -----------------
-local onlyBankArmor = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Armor end
-local onlyBankWeapons = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Weapon end
-local onlyBankConsumables = function(item) return item.bagID == -1 or (item.bagID >= 5 and item.bagID <= 11) and item.type and item.type == L.Consumables end
+-- Stuff
+local onlyBankArmor = function(item) return onlyBank(item) and onlyArmor(item) end
+local onlyBankWeapons = function(item) return onlyBank(item) and onlyWeapon(item) end
+local onlyBankStuff = function(item) return onlyBank(item) and onlyStuff(item) end
+-- Consumables
+local onlyBankConsumables = function(item) return onlyBank(item) and onlyConsumables(item) end
+-- Trade Goods
+local onlyBankTG = function(item) return onlyBank(item) and onlyTradeGoods(item) end
+-- Quest
+local onlyBankQuest = function(item) return onlyBank(item) and onlyQuest(item) end
 
+------------------
 -- Frames Spawns
+------------------
 
---local bankArmor = cargBags:Spawn("cB_Gnomed_Bank-Armor",bank)
---bankArmor:SetFilter(onlyBankArmor, true)
 
 -- Bank frame and bank bags
+-- TODO: those filters
+--
+local bankStuff = cargBags:Spawn("cB_Gnomed_Bank Stuff", bank)
+bankStuff:SetFilter(onlyBankStuff, true)
+bankStuff:SetFilter(hideEmpty)
+
+local bankQuest = cargBags:Spawn("cB_Gnomed_Bank Quest", bankStuff)
+bankQuest:SetFilter(onlyBankQuest, true)
+bankQuest:SetFilter(hideEmpty, true)
+
+local bankConso = cargBags:Spawn("cB_Gnomed_Bank Consumables", bankQuest)
+bankConso:SetFilter(onlyBankConsumables, true)
+bankConso:SetFilter(hideEmpty, true)
+
+local bankTGoods = cargBags:Spawn("cB_Gnomed_Bank Trade Goods", bankConso)
+bankTGoods:SetFilter(onlyBankTG, true)
+bankTGoods:SetFilter(hideEmpty, true) --]]
+
+
 local bank = cargBags:Spawn("cB_Gnomed_Bank")
 bank:SetFilter(onlyBank, true)
 
@@ -610,9 +641,19 @@ consumables:SetFilter(onlyConsumables, true)
 consumables:SetFilter(hideEmpty, true)
 
 -- Trade goods
-local tgoods = cargBags:Spawn("cB_Gnomed_TradeGoods",consumables)
+local tgoods = cargBags:Spawn("cB_Gnomed_Trade Goods",consumables)
 tgoods:SetFilter(onlyTradeGoods, true)
 tgoods:SetFilter(hideEmpty, true)
+
+-- Glyphs
+local gl = cargBags:Spawn("cB_Gnomed_Glyphs", tgoods)
+gl:SetFilter(onlyGlyphs, true)
+gl:SetFilter(hideEmpty, true)
+
+-- Gems
+local gems = cargBags:Spawn("cB_Gnomed_Gems", isHunter and pj or gl)
+gems:SetFilter(onlyGems, true)
+gems:SetFilter(hideEmpty, true) --]]
 
 -- Bagpack and bags
 local main = cargBags:Spawn("cB_Gnomed_Bag")
@@ -622,28 +663,6 @@ main:SetFilter(onlyBags, true)
 local key = cargBags:Spawn("cB_Gnomed_Keyring",main)
 key:SetFilter(onlyKeyring, true)
 key:SetFilter(hideEmpty, true)
-
-
--- Opening / Closing Functions
-function OpenCargBags()
-	main:Show()
-	equipment:Show()
-	stuff:Show()
-	quest:Show()
-	consumables:Show()
-	tgoods:Show()
-end
-
-function CloseCargBags()
-	key:Hide()
-	tgoods:Hide()
-	consumables:Hide()
-	quest:Hide()
-	stuff:Hide()
-	bank:Hide()
-	equipment:Hide()
-	main:Hide()
-end
 
 
 -- Now let's set the points
@@ -660,6 +679,7 @@ function HideIfMain()
 end
 
 local function PlaceFrame(frame, parent,...)
+	tinsert(cargBags_Gnomed.Frames, frame)
 	HideIfMain()
 	bak[frame] = {}
 	bak[frame].Point = {...}
@@ -682,46 +702,88 @@ local function PlaceFrame(frame, parent,...)
 end
 
 	-- Bags
-main:SetPoint("RIGHT",-65,0)
+main:SetPoint("RIGHT",-65-80)
 
 
 PlaceFrame(consumables,main,"BOTTOM",main,"TOP",0,15)
 PlaceFrame(tgoods,consumables,"BOTTOM",consumables,"TOP",0,15)
+PlaceFrame(gl, tgoods, "BOTTOM", tgoods, "TOP",0,15)
+PlaceFrame(gems, gl, "BOTTOM", gl, "TOP",0,15)
 PlaceFrame(equipment,main,"BOTTOMRIGHT",main,"BOTTOMLEFT",-15,0)
 PlaceFrame(stuff,equipment,"BOTTOM",equipment,"TOP",0,15)
 PlaceFrame(quest,stuff,"BOTTOM",stuff,"TOP",0,15)
 PlaceFrame(key,quest,"BOTTOM",quest,"TOP",0,15)
 
-	-- Bank
-bank:SetPoint("LEFT", 15, 0)
 
+	-- Bank
+bank:SetPoint("LEFT", 15, -80)
+
+ 
+PlaceFrame(bankStuff, bank, "BOTTOM", bank, "TOP", 0, 15) 
+PlaceFrame(bankQuest, bankStuff, "BOTTOM", bankStuff, "TOP", 0, 15)
+PlaceFrame(bankConso, bankQuest, "BOTTOM", bankQuest, "TOP", 0, 15) 
+PlaceFrame(bankTGoods, bankConso, "BOTTOM", bankConso, "TOP", 0, 15)
 
 
 function ToggleCargBags(forceopen)
 	if(main:IsShown() and not forceopen) then CloseCargBags() else OpenCargBags() end
 end
 
+
+-- Opening / Closing Functions
+function OpenCargBags() 
+	main:Show()
+	for _, f in pairs(cargBags_Gnomed.Frames) do
+		str = f:GetName()
+		name = strmatch(str, "cB_Gnomed_([%w ]+)")
+		if (not strfind(name,"Bank")) then
+			f:Show()
+			key:Hide()
+			CollapseEmpty(f)
+		end			
+	end	
+end
+
+function CloseCargBags() 
+	main:Hide()
+	for _, f in pairs(cargBags_Gnomed.Frames) do
+		str = f:GetName()
+		name = strmatch(str, "cB_Gnomed_([%w ]+)")
+		if (not strfind(name,"Bank")) then
+			f:Hide()
+		end			
+	end	
+end
 -- To toggle containers when entering / leaving a bank
 local bankToggle = CreateFrame"Frame"
 bankToggle:RegisterEvent"BANKFRAME_OPENED"
 bankToggle:RegisterEvent"BANKFRAME_CLOSED"
 bankToggle:SetScript("OnEvent", function(self, event)
-	if(event == "BANKFRAME_OPENED") then
-		bank:Show()
+	if(event == "BANKFRAME_OPENED") then 
 		main:Show()
-		equipment:Show()
-		stuff:Show()
-		quest:Show()
-		consumables:Show()
-		tgoods:Show()
-	else
+		bank:Show()
+		for _, f in pairs(cargBags_Gnomed.Frames) do
+			f:Show()
+			key:Hide()
+			CollapseEmpty(f)
+		end	
+	else 
 		bank:Hide()
-		--main:Hide()
+		for _, f in pairs(cargBags_Gnomed.Frames) do
+		str = f:GetName()
+		name = strmatch(str, "cB_Gnomed_([%w ]+)")
+		if(strfind(name,"Bank")) then
+			f:Hide()
+		end			
+	end
 	end
 end)
 
+--~ main:SetScript("OnShow", function() main:Hide() main:SetScript("OnShow",function() end) end)
+--~ bank:SetScript("OnShow", function() bank:Hide() bank:SetScript("OnShow",function() end) end)
 -- Close real bank frame when our bank frame is hidden
 bank:SetScript("OnHide", CloseBankFrame)
+
 
 -- Hide the original bank frame
 BankFrame:UnregisterAllEvents()

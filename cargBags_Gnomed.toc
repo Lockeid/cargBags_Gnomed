@@ -1,7 +1,7 @@
-## Interface: 30200
+## Interface: 30300
 ## Title: cargBags_|cfe87b23fGnomed|r
 ## Author: Soeters
-## Version: r17
+## Version: r20
 ## X-eMail:soeters@free.fr
 ## Notes: Layout for cargBags
 ## RequiredDeps: cargBags
