@@ -1,0 +1,37 @@
+h1. cargBags_Gnomed
+
+h2. What is this ?
+
+This is a custom layout for cargBags based on cargBags_Pernobilis.
+It uses filters so you can easily see your weapons, armor, quest items, trade goods and consumables. The Equipment bag won't show objects if you're using cargBags_Anywhere and watching another character's bag. I'm working on that.
+
+All the frames are movables but their place will not be saved.
+
+h2. Features
+*Filtered bags and bank
+*Dropdown to toggle bags
+*kRestack support
+*Equipment bag, to easily see if an item is in one of your item sets or not, if not it will show up in the Stuff bag.
+*Tabard-O-Matic support
+*cargBags_Anywhere support, now you can see Character choose with a little arrow in the filters bag)
+
+h2. Localization
+
+It should work on every client as I use the API which returns localized strings
+
+
+h2. Known issues
+
+*Sometimes the weapon bag has empty slots, they can be removed by either reload the UI or move an item in the main bag.
+
+
+
+h2. To do
+Only one icon for empty buttons
+
+h2.Thanks
+*Cargor for this wonderful addon
+*Luzzifus for all his help (for equipments and frame placement)
+
+h2. License
+See LICENSE
