@@ -8,6 +8,7 @@ It uses filters so you can easily see your weapons, armor, quest items, trade go
 All the frames are movables but their place will not be saved.
 
 h2. Features
+
 *Filtered bags and bank
 *Dropdown to toggle bags
 *kRestack support
@@ -27,11 +28,14 @@ h2. Known issues
 
 
 h2. To do
+
 Only one icon for empty buttons
 
 h2.Thanks
+
 *Cargor for this wonderful addon
 *Luzzifus for all his help (for equipments and frame placement)
 
 h2. License
+
 See LICENSE
